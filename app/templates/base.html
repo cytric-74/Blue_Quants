@@ -1,0 +1,64 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Blue Quants{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/">
+          <span class="brand-mark">BQ</span>
+          <span>Blue Quants</span>
+        </a>
+        <nav class="nav-list">
+          <a href="/" class="{% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
+          <a href="/search/" class="{% if active_page == 'why_moved' %}active{% endif %}">Why Moved</a>
+          <a href="/ticker/" class="{% if active_page == 'markets' %}active{% endif %}">Markets</a>
+          <a href="/predict/NVDA/30/" class="{% if active_page == 'stocks' %}active{% endif %}">Stocks</a>
+        </nav>
+        <div class="system-card">
+          <span>Signal Engine</span>
+          <strong>LIVE SIM</strong>
+          <small>Update latency 384ms</small>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">Real-Time Market Movement Intelligence</span>
+            <h1>{% block page_heading %}Why did this stock move?{% endblock %}</h1>
+          </div>
+          <form class="symbol-search" onsubmit="goToSymbol(event)">
+            <input id="symbol-input" type="text" placeholder="NVDA" value="{{ profile.ticker }}" aria-label="Ticker symbol">
+            <button type="submit">Analyze</button>
+          </form>
+        </header>
+
+        {% block content %}{% endblock %}
+
+        <footer class="site-footer">
+          <span>Developed by Cytric</span>
+          <a href="https://github.com/cytric-74" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://linkedin.com/in/roh28j" target="_blank" rel="noreferrer">LinkedIn</a>
+        </footer>
+      </main>
+    </div>
+
+    <script>
+      function goToSymbol(event) {
+        event.preventDefault();
+        const value = document.getElementById("symbol-input").value.trim() || "NVDA";
+        window.location.href = `/predict/${value.toUpperCase()}/30/`;
+      }
+    </script>
+  </body>
+</html>

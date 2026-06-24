@@ -1,64 +1,104 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Blue Quants{% endblock %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="{% static 'css/style.css' %}" rel="stylesheet">
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <a class="brand" href="/">
-          <span class="brand-mark">BQ</span>
-          <span>Blue Quants</span>
-        </a>
-        <nav class="nav-list">
-          <a href="/" class="{% if active_page == 'dashboard' %}active{% endif %}">Dashboard</a>
-          <a href="/search/" class="{% if active_page == 'why_moved' %}active{% endif %}">Why Moved</a>
-          <a href="/ticker/" class="{% if active_page == 'markets' %}active{% endif %}">Markets</a>
-          <a href="/predict/NVDA/30/" class="{% if active_page == 'stocks' %}active{% endif %}">Stocks</a>
-        </nav>
-        <div class="system-card">
-          <span>Signal Engine</span>
-          <strong>LIVE SIM</strong>
-          <small>Update latency 384ms</small>
-        </div>
-      </aside>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Blue Quants — Market Intelligence{% endblock %}</title>
+  <meta name="description" content="Real-time stock market intelligence — understand why stocks move and what to do about it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
 
-      <main class="content">
-        <header class="topbar">
-          <div>
-            <span class="eyebrow">Real-Time Market Movement Intelligence</span>
-            <h1>{% block page_heading %}Why did this stock move?{% endblock %}</h1>
-          </div>
-          <form class="symbol-search" onsubmit="goToSymbol(event)">
-            <input id="symbol-input" type="text" placeholder="NVDA" value="{{ profile.ticker }}" aria-label="Ticker symbol">
-            <button type="submit">Analyze</button>
-          </form>
-        </header>
+<div class="ambient-bg">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+</div>
 
-        {% block content %}{% endblock %}
+<div class="app-shell {% block shell_class %}{% endblock %}">
+  <aside class="sidebar">
+    <div class="brand-icon">BQ</div>
+    <nav class="nav-list">
+      <a href="/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard" aria-label="Dashboard">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+        </svg>
+        <span class="tooltip">Dashboard</span>
+      </a>
+      <a href="/compare/" class="nav-item {% if active_page == 'compare' %}active{% endif %}" id="nav-compare" aria-label="Compare">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span class="tooltip">Compare</span>
+      </a>
+      <a href="/options/" class="nav-item {% if active_page == 'options' %}active{% endif %}" id="nav-options" aria-label="Options Flow">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span class="tooltip">Options Flow</span>
+      </a>
+      <a href="/" class="nav-item {% if active_page == 'watchlist' %}active{% endif %}" id="nav-watchlist" aria-label="Watchlist">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span class="tooltip">Watchlist</span>
+      </a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="status-dot" title="Signal engine live"></div>
+    </div>
+  </aside>
 
-        <footer class="site-footer">
-          <span>Developed by Cytric</span>
-          <a href="https://github.com/cytric-74" target="_blank" rel="noreferrer">GitHub</a>
-          <a href="https://linkedin.com/in/roh28j" target="_blank" rel="noreferrer">LinkedIn</a>
-        </footer>
-      </main>
+  <main class="main-content" id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <aside class="right-panel" id="right-panel">
+    {% block right_panel %}
+    <div id="focus-card-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="right-section-title">Focus Stock</span>
+        <select id="focus-ticker-select" class="expiry-select" onchange="setFocusTicker(this.value)">
+          {% for stock in stocks %}
+          <option value="{{ stock.ticker }}">{{ stock.ticker }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="focus-card" class="stock-focus-card">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
     </div>
 
-    <script>
-      function goToSymbol(event) {
-        event.preventDefault();
-        const value = document.getElementById("symbol-input").value.trim() || "NVDA";
-        window.location.href = `/predict/${value.toUpperCase()}/30/`;
-      }
-    </script>
-  </body>
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="right-section-title">Market News</span>
+        <span style="font-size:10px;color:var(--text-3)" id="news-ticker-label"></span>
+      </div>
+      <div id="news-list" class="news-list">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+    {% endblock %}
+  </aside>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+<script>
+  window.BQ = {
+    tickers: {{ tickers_json|safe }},
+    activePage: "{{ active_page }}",
+  };
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
 </html>

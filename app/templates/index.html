@@ -1,156 +1,254 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Blue Quants Dashboard{% endblock %}
-{% block page_heading %}Market Movement Intelligence{% endblock %}
+{% block title %}Blue Quants — Real-Time Dashboard{% endblock %}
+
+{% block shell_class %}dashboard-shell{% endblock %}
 
 {% block content %}
-<section class="hero-grid">
-  <div class="ticker-hero panel">
-    <div>
-      <span class="eyebrow">Primary Focus</span>
-      <h2>{{ profile.ticker }}</h2>
-      <p>{{ profile.name }}</p>
-    </div>
-    <div class="price-stack">
-      <strong>${{ profile.price }}</strong>
-      <span class="positive">{{ profile.change }}</span>
-    </div>
-    <div class="confidence-ring" style="--score: {{ profile.confidence }}%">
-      <span>{{ profile.confidence }}%</span>
-      <small>confidence</small>
-    </div>
+<div class="topbar">
+  <div class="topbar-title">
+    <div class="topbar-eyebrow">Real-Time Market Intelligence</div>
+    <div class="topbar-heading">Market Dashboard</div>
   </div>
 
-  <div class="panel answer-panel">
-    <span class="eyebrow">Primary Driver</span>
-    <h2>{{ profile.primary_driver }}</h2>
-    <p>Ranked explanation from measurable catalyst, sector, volume, technical, and flow signals.</p>
-  </div>
-</section>
+  <form class="search-bar" id="search-form" onsubmit="handleSearch(event)" role="search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input id="ticker-input" type="text" placeholder="Search symbol, e.g. AAPL" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Search stock ticker">
+    <kbd>Enter</kbd>
+  </form>
 
-<section class="section-grid two-col">
-  <div class="panel">
-    <div class="panel-heading">
-      <h3>Movement Attribution</h3>
-      <span>Contribution</span>
+  <div class="topbar-actions">
+    <div class="market-badge" id="market-badge">
+      <span class="dot"></span>
+      <span id="market-status-text">Market Open</span>
     </div>
-    <div class="driver-list">
-      {% for driver in drivers %}
-      <article class="driver-row">
-        <div>
-          <strong>{{ driver.name }}</strong>
-          <small>{{ driver.evidence }}</small>
-        </div>
-        <div class="bar-track">
-          <span style="width: {{ driver.value }}%"></span>
-        </div>
-        <b>{{ driver.value }}%</b>
-      </article>
-      {% endfor %}
-    </div>
+    <button class="refresh-btn" id="refresh-btn" onclick="refreshAll()" title="Refresh data" aria-label="Refresh all data">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
   </div>
+</div>
 
-  <div class="panel">
-    <div class="panel-heading">
-      <h3>Driver Timeline</h3>
-      <span>Intraday</span>
-    </div>
-    <ol class="timeline">
-      {% for event in timeline %}
-      <li>
-        <time>{{ event.time }}</time>
-        <div>
-          <strong>{{ event.title }}</strong>
-          <p>{{ event.detail }}</p>
-        </div>
-      </li>
-      {% endfor %}
-    </ol>
+<div class="ticker-tags" id="ticker-tags">
+  {% for stock in stocks %}
+  <div class="ticker-tag" data-ticker="{{ stock.ticker }}">
+    {{ stock.ticker }}
+    {% if stocks|length > 1 %}
+    <span class="remove-tag" onclick="removeTicker('{{ stock.ticker }}')" title="Remove">×</span>
+    {% endif %}
   </div>
-</section>
-
-<section class="section-grid three-col">
-  {% for metric in intelligence_metrics %}
-  <article class="metric-tile">
-    <span>{{ metric.label }}</span>
-    <strong>{{ metric.value }}</strong>
-    <div class="mini-gauge"><span style="width: {{ metric.value }}%"></span></div>
-    <p>{{ metric.note }}</p>
-  </article>
   {% endfor %}
-</section>
+  <button class="add-ticker-btn" onclick="promptAddTicker()" id="add-ticker-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add Stock
+  </button>
+</div>
 
-<section class="section-grid two-col">
-  <div class="panel">
-    <div class="panel-heading">
-      <h3>Sentiment Decomposition</h3>
-      <span>Source weighted</span>
+<div class="bento-grid">
+  <div class="bento-card span-2" id="hero-card">
+    <div class="hero-ticker-row">
+      <div class="hero-ticker-info">
+        <div class="hero-icon" style="background: var(--{{ profile.color }})">{{ profile.ticker|slice:":2" }}</div>
+        <div>
+          <div class="hero-ticker">{{ profile.ticker }}</div>
+          <div class="hero-name">{{ profile.name }}</div>
+        </div>
+      </div>
+      <span class="change-badge {% if profile.is_positive %}pos{% else %}neg{% endif %}" id="hero-badge">{{ profile.change_pct }}%</span>
     </div>
-    <div class="sentiment-stack">
-      {% for item in sentiment %}
-      <div>
-        <span>{{ item.source }}</span>
-        <div class="bar-track"><span style="width: {{ item.score }}%"></span></div>
-        <b>{{ item.count }}</b>
+    <div class="hero-price" id="hero-price">${{ profile.price }}</div>
+    <div class="hero-change-row">
+      <span class="hero-change {% if profile.is_positive %}positive{% else %}negative{% endif %}" id="hero-change-text">
+        {{ profile.change_abs }} today
+      </span>
+      <span class="hero-driver-tag" id="hero-driver-tag">
+        Driver: {{ profile.primary_driver }}
+      </span>
+    </div>
+    <canvas class="hero-chart" id="hero-sparkline"></canvas>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Market Cap</span>
+        <span class="hero-meta-value" id="hero-mc">{{ profile.market_cap }}</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Volume</span>
+        <span class="hero-meta-value" id="hero-vol">{{ profile.volume }}</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">P/E Ratio</span>
+        <span class="hero-meta-value" id="hero-pe">{{ profile.pe_ratio|default:"—" }}</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Beta</span>
+        <span class="hero-meta-value" id="hero-beta">{{ profile.beta }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bento-card span-2">
+    <div class="panel-header">
+      <span class="panel-title">Watchlist</span>
+    </div>
+    <div class="watchlist-stack">
+      {% for stock in stocks %}
+      <div class="watchlist-item {% if stock.ticker == profile.ticker %}active-item{% endif %}" onclick="setFocusTicker('{{ stock.ticker }}')" id="watchlist-{{ stock.ticker }}">
+        <div class="watchlist-icon" style="background: var(--{{ stock.color }})">{{ stock.ticker|slice:":2" }}</div>
+        <div class="watchlist-info">
+          <div class="watchlist-ticker">{{ stock.ticker }}</div>
+          <div class="watchlist-name">{{ stock.name|truncatechars:22 }}</div>
+        </div>
+        <canvas class="watchlist-mini-chart" id="spark-{{ stock.ticker }}"></canvas>
+        <div class="watchlist-right">
+          <div class="watchlist-price">${{ stock.price }}</div>
+          <span class="watchlist-change {% if stock.is_positive %}pos{% else %}neg{% endif %}">{{ stock.change_pct }}%</span>
+        </div>
       </div>
       {% endfor %}
     </div>
   </div>
 
-  <div class="panel">
-    <div class="panel-heading">
-      <h3>Similar Historical Events</h3>
-      <span>Pattern engine</span>
+  <div class="bento-card span-4" id="compare-panel">
+    <div class="panel-header">
+      <span class="panel-title">Performance Comparison</span>
+      <div class="timeframe-tabs" id="tf-tabs">
+        <button class="tf-tab" data-period="1d">1D</button>
+        <button class="tf-tab active" data-period="1mo">1M</button>
+        <button class="tf-tab" data-period="3mo">3M</button>
+        <button class="tf-tab" data-period="6mo">6M</button>
+        <button class="tf-tab" data-period="1y">1Y</button>
+      </div>
+      <span class="panel-subtitle">Normalised to 100</span>
     </div>
-    <table class="terminal-table">
-      <thead>
-        <tr>
-          <th>Event</th>
-          <th>Similarity</th>
-          <th>Forward Outcome</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for event in similar_events %}
-        <tr>
-          <td>{{ event.ticker }} {{ event.date }}</td>
-          <td>{{ event.score }}%</td>
-          <td>{{ event.outcome }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="chart-wrap">
+      <canvas id="compare-chart" aria-label="Stock comparison chart" role="img"></canvas>
+    </div>
   </div>
-</section>
 
-<section class="panel">
-  <div class="panel-heading">
-    <h3>Live Market Monitor</h3>
-    <span>Evidence-ranked movers</span>
+  <div class="suggestion-card span-2 {% if profile.suggestion.stance %}{{ profile.suggestion.stance }}{% else %}neutral{% endif %}" id="suggestion-card">
+    <div class="suggestion-badge {% if profile.suggestion.stance %}{{ profile.suggestion.stance }}{% else %}neutral{% endif %}">{{ profile.suggestion.action }}</div>
+    <div class="suggestion-headline">{{ profile.suggestion.headline }}</div>
+    <div class="suggestion-detail">{{ profile.suggestion.detail }}</div>
+    <div class="suggestion-action">
+      <div class="suggestion-action-icon">💡</div>
+      <div>
+        <div class="suggestion-action-label">What to do</div>
+        <div class="suggestion-action-text">{{ profile.suggestion.what_to_do }}</div>
+      </div>
+    </div>
   </div>
-  <table class="terminal-table">
-    <thead>
-      <tr>
-        <th>Ticker</th>
-        <th>Name</th>
-        <th>Move</th>
-        <th>Confidence</th>
-        <th>Primary Driver</th>
-        <th>Volume</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for stock in market_snapshot %}
-      <tr>
-        <td><a href="/predict/{{ stock.ticker }}/30/">{{ stock.ticker }}</a></td>
-        <td>{{ stock.name }}</td>
-        <td class="{% if '-' in stock.change %}negative{% else %}positive{% endif %}">{{ stock.change }}</td>
-        <td>{{ stock.confidence }}%</td>
-        <td>{{ stock.primary_driver }}</td>
-        <td>{{ stock.volume }}</td>
-      </tr>
+
+  <div class="bento-card span-2">
+    <div class="panel-header">
+      <span class="panel-title">Market News</span>
+    </div>
+    <div id="news-list" class="news-list">
+      <div class="loading-overlay"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <div class="bento-card span-2" id="drivers-panel">
+    <div class="panel-header">
+      <span class="panel-title">Movement Attribution</span>
+    </div>
+    <div class="driver-list" id="driver-list">
+      {% for driver in profile.drivers %}
+      <div class="driver-row">
+        <div>
+          <div class="driver-label">{{ driver.name }}</div>
+          <div class="driver-evidence">{{ driver.evidence }}</div>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ driver.value }}%"></div></div>
+        <div class="driver-pct">{{ driver.value }}%</div>
+      </div>
+      {% empty %}
+      <div class="loading-overlay"><div class="spinner"></div></div>
       {% endfor %}
-    </tbody>
-  </table>
-</section>
+    </div>
+  </div>
+
+  <div class="bento-card span-2" id="metrics-panel">
+    <div class="panel-header">
+      <span class="panel-title">Intelligence Metrics</span>
+    </div>
+    <div class="metrics-grid" id="metrics-grid">
+      {% for m in profile.intelligence_metrics %}
+      {% with pct=m.value %}
+      <div class="metric-card {% if pct >= 66 %}gauge-high{% elif pct >= 33 %}gauge-mid{% else %}gauge-low{% endif %}">
+        <div class="metric-label">{{ m.label }}</div>
+        <div class="metric-value">{{ pct }}</div>
+        <div class="mini-gauge"><div class="mini-fill" style="width:{{ pct }}%"></div></div>
+        <div class="metric-note">{{ m.note }}</div>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="loading-overlay" style="grid-column:1/-1"><div class="spinner"></div></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bento-card span-4" id="options-panel">
+    <div class="panel-header">
+      <span class="panel-title" id="options-panel-title">Options Chain</span>
+      <select id="expiry-select" class="expiry-select" onchange="loadOptions(null, this.value)"></select>
+      <span class="panel-subtitle" id="options-sentiment-label"></span>
+    </div>
+
+    <div class="options-summary" id="options-summary">
+      <div class="loading-overlay" style="grid-column:1/-1"><div class="spinner"></div></div>
+    </div>
+
+    <div class="sentiment-bar-wrap" id="options-sentiment-bar-wrap" style="display:none">
+      <div class="sentiment-label">
+        <span id="call-label">Calls —%</span>
+        <span id="put-label">Puts —%</span>
+      </div>
+      <div class="sentiment-bar">
+        <div class="calls" id="calls-bar" style="width:50%"></div>
+        <div class="puts"></div>
+      </div>
+    </div>
+
+    <div class="tab-bar" id="options-tab-bar">
+      <button class="tab-btn active" id="tab-calls" onclick="switchOptionTab('calls')">Calls</button>
+      <button class="tab-btn" id="tab-puts"  onclick="switchOptionTab('puts')">Puts</button>
+    </div>
+
+    <div class="options-table-wrap">
+      <table class="options-table" id="options-table">
+        <thead>
+          <tr>
+            <th>Strike</th>
+            <th>Last</th>
+            <th>Bid</th>
+            <th>Ask</th>
+            <th>Volume</th>
+            <th>Open Int.</th>
+            <th>IV %</th>
+          </tr>
+        </thead>
+        <tbody id="options-tbody">
+          <tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  window.BQ_SPARKLINES = {
+    {% for stock in stocks %}
+    "{{ stock.ticker }}": {{ stock.sparkline|safe }},
+    {% endfor %}
+  };
+</script>
 {% endblock %}

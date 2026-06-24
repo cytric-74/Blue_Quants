@@ -1,27 +1,19 @@
-"""core URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
-from django.urls import path,include
-
-from app.views import *
+from django.urls import path
+from app.views import (
+    index, compare_page, options_page,
+    api_stock, api_compare, api_options, api_news, api_sparkline,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', index),
-    path('search/', search),
-    path('predict/<str:ticker_value>/<str:number_of_days>/', predict),
-    path('ticker/', ticker),
+    path('', index, name='index'),
+    path('compare/', compare_page, name='compare'),
+    path('options/', options_page, name='options'),
+    # JSON API
+    path('api/stock/<str:ticker_sym>/', api_stock, name='api_stock'),
+    path('api/compare/', api_compare, name='api_compare'),
+    path('api/options/<str:ticker_sym>/', api_options, name='api_options'),
+    path('api/news/<str:ticker_sym>/', api_news, name='api_news'),
+    path('api/sparkline/<str:ticker_sym>/', api_sparkline, name='api_sparkline'),
 ]

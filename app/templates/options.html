@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Blue Quants — Options Flow{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="topbar-title">
+    <div class="topbar-eyebrow">Derivatives Intelligence</div>
+    <div class="topbar-heading">Options Flow</div>
+  </div>
+  <form class="search-bar" id="search-form" onsubmit="handleOptionsSearch(event)" role="search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input id="options-search-input" type="text" placeholder="Enter ticker, e.g. AAPL" value="{{ ticker }}" autocapitalize="characters" spellcheck="false">
+  </form>
+  <div class="topbar-actions">
+    <div class="market-badge" id="market-badge">
+      <span class="dot"></span><span id="market-status-text">Market Open</span>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="options-panel">
+  <div class="panel-header">
+    <span class="panel-title" id="options-panel-title">Options Chain — {{ ticker }}</span>
+    <select id="expiry-select" class="expiry-select" onchange="loadOptions(null, this.value)">
+      <option>Loading…</option>
+    </select>
+    <span class="panel-subtitle" id="options-sentiment-label"></span>
+  </div>
+
+  <div class="options-summary" id="options-summary">
+    <div class="loading-overlay" style="grid-column:1/-1"><div class="spinner"></div></div>
+  </div>
+
+  <div class="sentiment-bar-wrap" id="options-sentiment-bar-wrap" style="display:none;margin-bottom:16px">
+    <div class="sentiment-label">
+      <span id="call-label">Calls</span>
+      <span id="put-label">Puts</span>
+    </div>
+    <div class="sentiment-bar">
+      <div class="calls" id="calls-bar" style="width:50%"></div>
+      <div class="puts"></div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-calls" onclick="switchOptionTab('calls')">Calls</button>
+    <button class="tab-btn"        id="tab-puts"  onclick="switchOptionTab('puts')">Puts</button>
+  </div>
+
+  <div class="options-table-wrap">
+    <table class="options-table" id="options-table">
+      <thead>
+        <tr>
+          <th>Strike</th>
+          <th>Last</th>
+          <th>Bid</th>
+          <th>Ask</th>
+          <th>Volume</th>
+          <th>Open Int.</th>
+          <th>IV %</th>
+          <th>ITM</th>
+        </tr>
+      </thead>
+      <tbody id="options-tbody">
+        <tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+window.BQ_OPTIONS_TICKER = "{{ ticker }}";
+window.BQ_SPARKLINES = {};
+document.addEventListener('DOMContentLoaded', () => {
+  loadOptions(window.BQ_OPTIONS_TICKER, null);
+  setMarketStatus();
+});
+
+function handleOptionsSearch(e) {
+  e.preventDefault();
+  const val = document.getElementById('options-search-input').value.trim().toUpperCase();
+  if (val) {
+    window.location.href = `/options/?t=${val}`;
+  }
+}
+</script>
+{% endblock %}

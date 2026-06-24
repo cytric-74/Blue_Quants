@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Blue Quants — Compare Stocks{% endblock %}
+
+{% block content %}
+<div class="topbar">
+  <div class="topbar-title">
+    <div class="topbar-eyebrow">Side-by-Side Analysis</div>
+    <div class="topbar-heading">Stock Comparison</div>
+  </div>
+  <div class="topbar-actions">
+    <div class="market-badge" id="market-badge">
+      <span class="dot"></span><span id="market-status-text">Market Open</span>
+    </div>
+    <button class="refresh-btn" id="refresh-btn" onclick="refreshAll()" aria-label="Refresh">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="ticker-tags" id="ticker-tags"></div>
+
+<div class="panel">
+  <div class="panel-header">
+    <span class="panel-title">Normalised Performance</span>
+    <div class="timeframe-tabs" id="tf-tabs">
+      <button class="tf-tab" data-period="1d">1D</button>
+      <button class="tf-tab active" data-period="1mo">1M</button>
+      <button class="tf-tab" data-period="3mo">3M</button>
+      <button class="tf-tab" data-period="6mo">6M</button>
+      <button class="tf-tab" data-period="1y">1Y</button>
+    </div>
+    <span class="panel-subtitle">Base = 100 at period start</span>
+  </div>
+  <div class="chart-wrap" style="height:320px">
+    <canvas id="compare-chart" aria-label="Comparison chart" role="img"></canvas>
+  </div>
+</div>
+
+<div class="panel" id="compare-table-panel">
+  <div class="panel-header">
+    <span class="panel-title">Key Metrics Comparison</span>
+  </div>
+  <div id="compare-table-wrap">
+    <div class="loading-overlay"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<div class="cards-row" id="cards-row"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+window.BQ_SPARKLINES = {};
+</script>
+{% endblock %}

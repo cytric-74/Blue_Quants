@@ -1,1 +1,19 @@
-virtualenv
+# virtual environments
+virtualenv/
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Django
+*.log
+db.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+*.swp
